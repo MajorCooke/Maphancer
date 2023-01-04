@@ -1,0 +1,2 @@
+# Maphancer
+GZDoom Map Optimizer
