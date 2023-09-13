@@ -1,0 +1,206 @@
+/*
+WIP stuff. Everything here is a work in progress, kept separate for cleanliness.
+Any of this can be changed at any time so external modders, please don't touch this
+file, for your sake and for my own unless you know what you're doing.
+
+Currently in development: flood fill.
+
+Iterating through and creating sections similar to FSections in GZDoom's source
+code, but a few snags are being hit. Currently working to handle multiple vertexes
+and linking to neighbors.
+
+1. Find all closed loops via lines with no backfacing sectors and blocking. 
+Mark the one with the player in it.
+
+2. Iterate through each and find any lines that aren't double sided to form 
+sections. If multiple lines connect to a single vertex, the one with the 
+smallest angle to the line you're checking is considered the next one. (Goes 
+from left to right).
+
+3. Construct new sections whenever a line is encountered that doesn't connect to 
+any of the vertexes in any other sections.
+
+4. Record all doublesided lines in their own array per sector, ignoring any 
+lines that don't have vertices with more than one connection.
+
+5. Add a separate tracker that indicates what sections a sector is in, as well 
+as a function for checking the section of a pos/vector/line is inside of.
+*/
+
+Struct MHVertex
+{
+	Vertex v;
+	Array<Line> lines;
+	Array<MHSecLine> seclines;
+	
+	void AddLine(Line lin, MHSecLine sec)
+	{
+		if (lin && lines.Find(lin) == lines.Size())
+			lines.Push(lin);
+		if (sec && seclines.Find(sec) == seclines.Size())
+			seclines.Push(sec);
+	}
+}
+
+Class MHSecLine
+{
+	Line ld;
+	Vertex start, end;
+	MHSecLine partner;
+	MHSection section;
+	int validcount;
+}
+
+Class MHSection
+{
+	Array<Sector> Sectors;
+	Array<MHSecLine> CLines;
+	
+	void AddLine(MHSecLine lin)
+	{
+		if (lin && CLines.Find(lin) >= CLines.Size())
+		{
+			CLines.Push(lin);
+			let sec = lin.ld.frontsector;
+			if (sec && Sectors.Find(sec) == Sectors.Size())
+				Sectors.Push(sec);
+		}
+	}
+}
+
+extend class MapHancerEvent
+{
+	private Array<MHSection> Sections;
+	private Array<Sector> MoSectors, Blacklist;
+	
+	// Called by the iterator when gathering and deactivating monsters.
+	private void AddThingSector(Actor mo)
+	{
+		let sec = mo.CurSector;
+		if (sec && MoSectors.Find(sec) >= MoSectors.Size())
+			MoSectors.Push(sec);
+	}
+	
+	// Constructs sections out of closed spaces.
+	private void ConstructSections()
+	{
+		Array<MHSecLine> lines; lines.Clear();
+		
+		foreach(lin : level.Lines)
+		{
+			// Get only lines that are without backsides.
+			if (lin.backsector || !lin.frontsector || 
+				lin.backsector == lin.frontsector)	continue;
+			
+			let sel = new('MHSecLine');
+			sel.start = lin.v1;
+			sel.end = lin.v2;
+			sel.ld = lin;
+			lines.Push(sel);
+		}
+		
+		// Connect them all.
+		foreach (la : lines)
+			foreach (lb : lines)
+				if (la != lb && la.end == lb.start)
+				{
+					
+					la.partner = lb;
+				}
+				
+		let scn = new('MHSection');
+		scn.AddLine(lines[0]);
+		
+		
+	}
+	private void AddCloset(int id)
+	{
+		MHSecLink link = FindLink(id);
+		if (!link)
+		{
+			link = MHSecLink.MakeFromID(id);
+			if (link)	Links.Push(link);
+			else		Console.Printf("Uh oh!");
+		}
+		if (link)
+		{
+			Last = link;
+			link.ToggleActive(false, null);
+		}
+	}
+}
+
+extend class MHSecLink
+{
+	protected Array<Int> Blacklist;
+	
+	
+	static MHSecLink MakeFromID(int dee)
+	{
+		MHSecLink SL = new('MHSecLink');
+		if (!SL || !SL.InitFromID(dee))
+			return null;
+		return SL;
+	}
+
+	protected bool InitFromID(int dee)
+	{
+		if (dee < 1)	return false;
+		ID = dee;
+		
+		let sec = level.Sectors[dee];
+		
+		// Add each line that doesn't have a matching back.
+		Array<MHSecLine> lines; lines.Clear();
+		foreach (lin : sec.Lines)
+		{
+			if (lin.backsector == lin.frontsector)
+				continue;
+				
+			let sl = new('MHSecLine');
+			lines.Push(sl);
+			sl.ld = lin;
+			sl.start = lin.v1;
+			sl.end = lin.v2;
+		}
+		
+		foreach (la : sec.Lines)
+		{
+			Array<MHSecLine> check; check.Clear();
+			foreach(lb : sec.Lines)
+			{
+				if (la != lb && !la.partner && la.end == lb.start)
+					check.Push(lb);
+					
+			}
+			
+			// If multiple lines are found to connect to the vertex, use the one
+			// with the smallest angle difference, according to GZDoom.
+			if (check.Size() == 1)
+				la.partner = check[0];
+			else if (check.Size() > 1)
+			{
+				for (int i = 0; i < check.Size(); i++)
+				
+			}
+			
+		}
+		/*
+		Array<int> Process; Process.Clear();
+		
+		Process.Push(dee);
+		Sectors.Push(dee);
+		
+		while (Process.Size() > 0)
+		{
+			// Get the last sector index for processing and remove it from the list.
+			int ind = Process.Size() - 1;
+			int iid = Process[ind];
+			Process.Pop();
+			sec = level.Sectors[iid];
+			
+			
+		}
+		*/
+	}
+}

@@ -1,0 +1,19 @@
+================================================================================
+*** How to get map checksums ***
+
+This is important so this acts only for specific maps.
+
+1. Load up the WAD in GZDoom.
+
+2. In console, type "mapchecksum <levelname>", where levelname is the technical
+	name, i.e. MAP29 for Doom 2 or E1M8 for Doom.
+	
+3. Do this for all maps in the WAD that could benefit from having monsters in
+	their closets deactivated.
+	
+4. Once all maps have their checksums printed, do "error_fatal" in console.
+	This will close the game but bring up the console and display all the prior
+	commands and their results entered. 
+	
+5. Copy/paste these checksums into a notepad and make note of the WAD name and 
+	map number.

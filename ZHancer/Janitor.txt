@@ -1,0 +1,51 @@
+extend Class MapHancerEvent
+{
+	private Array<MHJanitor> Janitors;
+	override void WorldThingDied(WorldEvent e)
+	{
+		Actor mo = e.Thing;
+		if (mo && mo.bISMONSTER)	
+		{
+			let th = MHJanitor.CreateJanitor(mo);
+		}
+	}
+}
+
+Class MHJanitor : Thinker
+{
+	protected int Timer;
+	protected Actor mo;
+	
+	static MHJanitor CreateJanitor(Actor mo)
+	{
+		let jan = new('MHJanitor');
+		jan.mo = mo;
+		jan.Timer = 35 * 60 * MHJanMin;
+		return jan;
+	}
+	
+	override void Tick()
+	{
+		if (bDESTROYED)	return;
+		
+		if (!mo)	
+		{	Destroy(); return; }
+		
+		if (!MHJanitorial)
+			return;
+		
+		if (!mo.bKILLED || mo.TID > 0)
+		{	
+			if (!mo.bKILLED)
+				mo.A_FadeTo(mo.Default.Alpha, 1.0);
+			Destroy(); return;	
+		}
+		
+		if (mo.CurState 
+			&& (mo.CurState.Tics < 0 || mo.CurState.bCanRaise) 
+			&& --Timer < 1)
+		{
+			mo.A_FadeOut();
+		}
+	}
+}

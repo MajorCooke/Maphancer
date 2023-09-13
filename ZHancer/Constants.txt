@@ -1,0 +1,22 @@
+enum EMHFlags
+{
+	MHF_HATE = 		1,		// Wakes up monsters the moment they're activated. Not desirable in all cases.
+	MHF_NOALIAS = 	1 << 1,	// Does not activate aliases.
+};
+
+enum EMHFunc
+{
+	MHFF_SPOT =		1, // Only get spots.
+};
+
+enum EMHType
+{
+	MHT_FREEZE = 0,
+	MHT_NOSPAWN,
+	MHT_DESTROY = MHT_NOSPAWN
+};
+
+enum EMHConst
+{
+	MH_FREEZETICS = 30000000
+};

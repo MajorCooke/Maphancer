@@ -1,0 +1,1046 @@
+#include "./Spawners.txt"
+
+// Documentation for public functions can be found inside Docs/Functionality.txt.
+
+Class MapHancerEventStatic : StaticEventHandler
+{
+	private int ForceOverride;
+	
+	static clearscope MapHancerEventStatic Fetch()
+	{
+		return MapHancerEventStatic(Find("MapHancerEventStatic"));
+	}
+}
+
+Class MapHancerEvent : EventHandler
+{
+	/*
+	const Hellbound_Map29 = "0E379EEBEB189F294ED122BC60D10A68";
+	const SF2012_Map27 = 	"A73D9D49CED45F8280719F7CABE5D51B";
+	const Sunder_Map09 =	"CE81F22E2981F4DE4E24613A8886366A";
+	const Sunder_Map10 =	"B9693AF68690F7707F7EA92F6ECABF44";
+	const Sunder_Map12 = 	"D1D2EF95D5B3179CE62BEA77CA9C9115";
+	const Sunder_Map14 =	"55605E7D28F4A0BA9A87126344C4A753";
+	const Sunder_Map15 =	"965D15632E04A1CDCF53030169C446F2";
+	const Sunder_Map32 =	"C2DF3F5CFEFECD6319EFD7F2964D62AB";
+	const Sunder_Map17 =	"77DE692763B84F140B550CCD01722171";
+	*/
+	
+	private Array<Actor> TeleSpots;
+	private Array<MHAliasInfo> Aliases;
+	private Array<MHTrigger> Triggers;
+	private Array<MHSecChain> Chains;
+	private MHSecChain Current;
+	private bool DestroyMe;
+	private int Setup;
+	private Name checksum;
+	
+	internal readonly EMHFlags	DefFlags; 
+	internal readonly EMHType	DefType;
+	
+	static clearscope MapHancerEvent Fetch()
+	{
+		return MapHancerEvent(Find("MapHancerEvent"));
+	}
+	
+	override void OnRegister()
+	{
+		SetOrder(10000);
+	}
+	
+	override void NetworkProcess(ConsoleEvent e)
+	{
+		if (e.Name == 'MHActivate')
+		{
+			int id = e.args[0];
+			int alias = e.args[1];
+			if (e.isManual) Console.Printf("Attempting to activate Chain %d", id);
+			if (!ActivateChain(players[e.Player].mo, id, (alias > 0)) && e.isManual)
+				Console.Printf("Chain %d not found!", id);
+		}
+		else if (e.Name == 'MHTest')
+		{
+			let plr = players[e.Player].mo;
+			if (plr) 
+			{
+				// Testing for Profane Promiseland
+				plr.SetOrigin((14368, 2496, 0), false);
+				plr.Angle = 0;
+				plr.player.cheats |= CF_GODMODE2;
+				
+				static const Class<Inventory> it[] =
+				{
+					"Chainsaw",
+					"Shotgun",
+					"SuperShotgun",
+					"Chaingun",
+					"RocketLauncher",
+					"PlasmaRifle",
+					"BFG9000"
+				};
+				for (int i = 0; i < it.Size(); i++)
+					Actor.Spawn(it[i], plr.pos, ALLOW_REPLACE);
+			}
+			
+			foreach(chain : Chains)
+			{
+				if (!chain)	continue;
+				
+				Switch(chain.ID)
+				{
+					Case 800:
+					Case 801:
+					Case 9001:
+					Case 9002:
+					Case 9003:
+					Case 9004:
+					Case 9005:
+						break;
+					Default:
+						chain.DestroyAll();
+						break;
+				}
+				
+			}
+		}
+	}
+	
+	override void WorldLoaded(WorldEvent e)
+	{
+		checksum = level.GetChecksum();
+	}
+		
+	override void WorldLinePreActivated(WorldEvent e)
+	{
+		if (DestroyMe || bDESTROYED)	return;
+		
+		ActivateChain(e.Thing, e.ActivatedLine.args[0]);
+	}
+		
+	override void WorldTick()
+	{
+		if (bDESTROYED)	return;
+		if (DestroyMe && !bDESTROYED)
+		{
+			Destroy();
+			return;
+		}
+		
+		// Give a tic just to make sure everything loads.
+		if (Setup < 1)
+			Setup++;
+		else if (Setup == 1)
+		{
+			Setup++;
+			Chains.Clear();
+			
+			PerformSetup();
+			
+			if (Chains.Size() > 0)
+			{
+				let it = ThinkerIterator.Create();
+				Actor mo;
+				while (mo = Actor(it.Next()))
+				{
+					if (mo) 
+					{
+						bool spot = (mo is "TeleportDest" || mo is "MapSpot");
+						
+						foreach (Chain : Chains)
+							if (Chain)
+								Chain.AddMobj(mo, spot, true);
+						
+					}
+				}
+				
+				foreach (Chain : Chains)
+					if (Chain) Chain.ToggleActive(false);
+				
+			} else DestroyMe = true;
+		}
+	}
+	
+	override void WorldThingSpawned(WorldEvent e)
+	{
+		let mo = e.Thing;
+		if (mo is 'TeleportDest' || mo is 'MapSpot')
+			TeleSpots.Push(mo);
+	}
+	
+	void GetTelespots(out Array<Actor> Spots)
+	{
+		Spots.Copy(TeleSpots);
+	}
+	
+	void AddAlias(int id, int rmin, int rmax = 0)
+	{
+		if (rmin == 0 || id == 0)
+			return;
+		if (rmax == 0)
+			rmax = rmin;
+		else if (rmin > rmax)
+		{
+			int swap = rmin;
+			rmin = rmax;
+			rmax = swap;
+		}
+		
+		bool found = false;
+		foreach (al : Aliases)
+		{
+			if (!al) continue;
+			if (al.Find(id) || al.FindRange(rmin, rmax))
+			{
+				found = true;
+				al.Add(id);
+				al.AddRange(rmin, rmax);
+			}
+		}
+		if (found)	return;
+		
+		MHAliasInfo al = new('MHAliasInfo');
+		al.Clear();
+		Aliases.Push(al);
+		al.Add(id);
+		al.AddRange(rmin, rmax);
+		
+	}
+	
+	private void GetAliases(int id, out Array<Int> nums, bool remove = false)
+	{
+		nums.Clear();
+		foreach (al : Aliases)
+		{
+			if (al && al.Find(id))
+			{
+			//	Console.Printf("Aliases found for %d", id);
+			//	for (int i = 0; i < nums.Size(); i++)
+			//		Console.Printf("%d", nums[i]);
+				
+				nums.Append(al.nums);
+				if (remove)	al.Destroy();
+			}
+		}
+		/*
+		// Clean out duplicates and remove the main ID.
+		Array<Int> temp; temp.Clear();
+		for (int i = 0; i < nums.Size(); i++)
+		{
+			if (nums[i] != id && (temp.Size() < 1 || temp.Find(nums[i]) == temp.Size()))
+				temp.Push(nums[i]);
+		}
+		nums.Move(temp);
+		*/
+	}
+	
+	void AddTrigger(int id, double px, double py)
+	{
+		Vector2 pos = (px, py);
+		if (!level.PointInSector(pos))	return;
+		let Chain = MakeChain(id);
+		if (Chain)
+			Chain.AddTrigger(id, pos);
+	}
+	
+	void AddTriggerVec(int id, Vector2 pos)
+	{
+		AddTrigger(id, pos.x, pos.y);
+	}
+	
+	void AddRecv(int id, Vector2 lo, Vector2 hi, int flags = 0)
+	{
+		if (lo ~== hi)
+			return;
+			
+		let Chain = MakeChain(id);
+		if (Chain)	Chain.AddRect(lo, hi, flags);
+	}
+	
+	void AddRect(int id, double lox, double loy, double hix, double hiy, int flags = 0)
+	{	AddRecv(id, (lox, loy), (hix, hiy), flags);	}
+	
+	
+	void AddVerts(int id, int lo, int hi, int flags = 0)
+	{
+		if (lo == hi) return;
+		Vertex low = level.Vertexes[lo];
+		Vertex high = level.Vertexes[hi];
+		AddRecv(id, low.p, high.p, flags);
+	}
+	
+	void AddSectors(int id, int from, int to = -1, int flags = 0)
+	{
+		let Chain = MakeChain(id);
+		if (Chain)
+		{
+			if (to < from)	to = from;
+			Chain.AddSectors(from, to, flags);
+		}
+	}
+	
+	void AddSecTag(int id, int tag = 0, int flags = 0)
+	{
+		if (tag < 1)	tag = id;
+		let Chain = MakeChain(id);
+		if (Chain)	Chain.AddSecTag(tag, flags);
+	}
+	
+	
+	// Gets the lowest and highest vertex pairs to form a box around the sector.
+	// Then adds everything within to the trigger number Chain.
+	void AddSecAABB(int id, int num, int flags = 0)
+	{
+		let sec = level.Sectors[num];
+		if (!sec)	return;
+		
+		Vector2 lo, hi;
+		foreach(lin : sec.Lines)
+		{
+			lo.X = min(lo.X, lin.v1.p.X, lin.v2.p.X);
+			lo.Y = min(lo.Y, lin.v1.p.Y, lin.v2.p.Y);
+			hi.X = max(hi.X, lin.v1.p.X, lin.v2.p.X);
+			hi.Y = max(hi.Y, lin.v1.p.Y, lin.v2.p.Y);
+		}
+		
+		AddRecV(id, lo, hi, flags);
+	}
+	
+	/*
+	void AddSecAABB(int id, int num, in num2 = 0, int flags = 0)
+	{
+		if (num2 < 1 || num2 >= level.Sectors.Size())
+			num2 = num;
+		
+		Array<Int> nums; nums.Clear();
+		nums.Push(num);
+		nums.Push(num2);
+		
+		bool good = false;
+		for (int i = 0; i < nums.Size(); i++)
+		{
+			int n = nums[i];
+			let sec = level.Sectors[n];
+			if (!sec)
+				continue;
+			
+			good = true;
+			Vector2 lo, hi;
+			foreach(lin : sec.Lines)
+			{
+				lo.X = min(lo.X, lin.v1.p.X, lin.v2.p.X);
+				lo.Y = min(lo.Y, lin.v1.p.Y, lin.v2.p.Y);
+				hi.X = max(hi.X, lin.v1.p.X, lin.v2.p.X);
+				hi.Y = max(hi.Y, lin.v1.p.Y, lin.v2.p.Y);
+			}
+		
+		}
+		
+		if (good)
+			AddRecV(id, lo, hi, flags);
+	}
+	*/
+	
+	void SetDefaultFlags(EMHFlags flag)	{	DefFlags = flag;	}
+	void SetDefaultType(EMHType tipe)	{	DefType = tipe;		}
+	void SetFlags(int id, EMHFlags flags)
+	{
+		let Chain = FindChain(id);
+		if (Chain)	Chain.SetFlags(flags);
+	}
+	
+	void SetType(int id, EMHType type)
+	{
+		let Chain = FindChain(id);
+		if (Chain)	Chain.SetType(type);
+	}
+	
+	void SetDelay(int id, int dmin, int dmax)
+	{
+		let Chain = MakeChain(id);
+		if (Chain)	Chain.SetDelay(dmin, dmax);
+	}
+	
+	private MHSecChain MakeChain(int id)
+	{
+		if (id < 0)
+			return current;
+		let Chain = FindChain(id);
+		if (!Chain)
+		{
+			if (id < 0)
+			{
+				for (int i = 1; i < 10000; i++)
+					if (!CheckForChain(i))
+						id = i;
+			}
+			Chain = MHSecChain.MakeBlank(id);
+			if (Chain)
+			{
+				Current = Chain;
+				Chain.Event = self;
+				Chains.Push(Chain);
+				Chain.SetFlags(DefFlags);
+				Chain.SetType(DefType);
+			}
+		}
+		return Chain;
+	}
+	
+	private MHSecChain FindChain(int id)
+	{
+		if (id < 0)	return current;
+		
+		if (current && current.ID == id)
+			return current;
+	
+		foreach (Chain : Chains)
+			if (Chain && Chain.ID == id)
+			{
+				current = Chain;
+				return Chain;
+			}
+			
+		return null;
+	}
+	
+	private bool CheckForChain(int id)
+	{
+		foreach (Chain : Chains)
+			if (Chain && Chain.ID == id)
+				return true;
+		return false;
+	}
+	
+	bool ActivateChain(Actor mo, int id, bool onlyid = false)
+	{
+		// Activate the primary chain.
+		bool good = false;
+		int flags = (onlyid ? MHF_NOALIAS : 0);
+		let Chain = FindChain(id);
+		if (Chain)
+		{
+			good = true;
+			onlyid = (onlyid || Chain.Flags & MHF_NOALIAS);
+				
+			Chain.ToggleActive(true, mo);
+			
+		//	Console.Printf("Found chain %d", id);
+		}
+	//	else if (id > 0) Console.Printf("Chain not found: %d", id);
+		
+		if (onlyid)
+			return good;
+		
+		// Now find all aliases connected to it and activate them too.
+		Array<Int> nums;
+		GetAliases(id, nums);
+		
+		if (nums.Size() < 1)
+			return good;
+			
+		foreach (ch : Chains)
+		{
+			if (ch && !ch.bDESTROYED && ch.ID != id && nums.Find(ch.ID) < nums.Size())
+			{
+				good = true;
+				ch.ToggleActive(true, mo);
+			}
+		}
+		
+		return good;
+	}
+}
+
+Class MHAliasInfo play
+{
+	Array<Int> nums;
+	
+
+
+	void Clear() 		{	nums.Clear(); }
+	void Add(int id)	{	if (!Find(id))	nums.Push(id);	}
+	bool Find(int id)	{	return (nums.Find(id) < nums.Size());	}
+	
+	void AddRange(int rmin, int rmax)
+	{
+		for (int i = rmin; i <= rmax; i++)
+			Add(i);
+	}
+	// Return true if a single number in the range is found.
+	bool FindRange(int from, int to)
+	{
+		for (int i = from; i <= to; i++)
+		{
+			if (nums.Find(i) < nums.Size())
+				return true;
+		}
+		return false;
+	}
+}
+
+// Primary storage for monsters and info.
+Class MHSecChain : Thinker
+{
+	MapHancerEvent Event;
+	int ID;
+	private int Delay[2]; // Min-max delay randomization for each monster.
+	private bool Active, Done;
+	Array<Actor> Monsters, Spawners, TeleSpots;
+	Array<MHRect> Rectangles;
+	Array<MHTrigger> Triggers;
+	Array<int> Sectors;
+	
+	internal readonly EMHFlags Flags;
+	internal readonly EMHType Type;
+	
+	int GetID() { return ID; }
+	
+	static MHSecChain MakeBlank(int dee)
+	{
+		let SL = new('MHSecChain');
+		SL.InitBlank(dee);
+		return SL;
+	}
+	
+	protected void InitBlank(int dee)
+	{
+		ID = dee;
+		SetType(MHOverride);
+		Warping.Clear();
+		Monsters.Clear();
+		Telespots.Clear();
+		Rectangles.Clear();
+		Triggers.Clear();
+		Sectors.Clear();
+		Delay[0] = 0; 
+		Delay[1] = 0;
+		Active = false; 
+		Done = false;
+	}
+	
+	void SetFlags(EMHFlags flag)	{	flags = flag;	}
+	void SetType(EMHType tipe)		{	type = tipe;	}
+	
+	void SetDelay(int dmin, int dmax = -1)
+	{
+		if (dmax < 0)
+			dmax = dmin;
+		else if (dmax < dmin)
+		{
+			int temp = dmin;
+			dmin = dmax;
+			dmax = temp;
+		}
+		
+		Delay[0] = dmin;
+		Delay[1] = dmax;
+	}
+	
+	void AddTrigger(int id, Vector2 pos)
+	{
+		let trig = MHTrigger(Actor.Spawn('MHTrigger', (pos,0)));
+		if (trig)
+		{
+			Triggers.Push(trig);
+			trig.Score = id;
+		}
+	}
+	
+	void AddMobj(Actor mo, bool onlyspot = false, bool range = false)
+	{
+		if (!mo)	return;
+		
+		
+		
+		// Do a rectangle range check to see if it fits.
+		if (range && !InRange(mo.pos.XY, onlyspot)) 
+			return;
+		
+		if (onlyspot)
+		{
+			bool spot = (mo is "TeleportDest" || mo is "MapSpot");
+			if (spot && TeleSpots.Find(mo) >= TeleSpots.Size())
+				TeleSpots.Push(mo);
+		}		
+		else if (mo.bISMONSTER)
+			if (Monsters.Find(mo) >= Monsters.Size())
+				Monsters.Push(mo);
+		
+		else if (mo is 'RandomSpawner')
+			if (Spawners.Find(mo) >= Spawners.Size())
+				Spawners.Push(mo);
+		
+	}
+	
+	void AddSecTag(int id, int flags = 0)
+	{
+		let it = level.CreateSectorTagIterator(id);
+		int index = 0;
+		while ((index = it.Next()))
+		{
+			if (index < 0)	return;
+			
+			let sec = level.Sectors[index];
+			Actor mo = sec.thinglist;
+			while (mo)
+			{
+				AddMobj(mo, (flags & MHFF_SPOT));
+				mo = mo.snext;
+			}
+		}
+	}
+	
+	void AddSector(int index, int flags = 0)
+	{
+		
+		let sec = level.Sectors[index];
+		if (!sec) return;
+		
+		// Spots need to be handled differently because they have NOSECTOR.
+		// Thus, they don't appear on a sector's thinglist.
+		if (flags & MHFF_SPOT)
+		{
+			Array<Actor> Sp;
+			if (!Event) Event = MapHancerEvent.Fetch();
+			Event.GetTeleSpots(Sp);
+			
+			foreach (Spot : Sp)
+				if (Spot)
+				{
+					Sector ts = level.PointInSector(Spot.pos.XY);
+					if (ts == sec)
+						AddMobj(Spot, true);
+				}
+		}
+		else
+		{
+			Actor mo = sec.thinglist;
+			while (mo != null)
+			{
+				AddMobj(mo);
+				mo = mo.snext;
+			}
+		}
+	}
+	
+	void AddSectors(int from, int to, int flags = 0)
+	{
+		for (int i = from; i <= to; i++)
+			AddSector(i, flags);
+	}
+	
+	void AddRect(Vector2 lo, Vector2 hi, int flags = 0)
+	{
+		let rect = MHRect.Create(lo, hi, (flags & MHFF_SPOT));
+		Rectangles.Push(rect);
+	}
+	
+	bool InRange(Vector2 p, bool spot) const
+	{
+		foreach (rec : Rectangles)
+		{
+			if (rec && rec.InRange(p, spot))
+				return true;
+		}
+		return false;
+	}
+	
+	private void SetMonsters(bool on, Actor who = null)
+	{
+		foreach (mon : Monsters)
+		{
+			if (!mon || mon.bKILLED)	continue;
+			HandleActor(on, mon, who);
+		}
+	}
+	
+	private void HandleActor(bool on, Actor mon, Actor who = null, int flg = 0)
+	{
+		if (on)
+		{
+			if (who && (flags & MHF_HATE) || (flg & MHF_HATE))
+			{
+				mon.Target = who;
+				mon.LastHeard = who;
+			}
+			mon.FreezeTics = 0;
+			mon.A_SetTics(1);
+		}
+		else mon.FreezeTics = MH_FREEZETICS;
+	}
+	
+	void ToggleActive(bool on, Actor who = null)
+	{
+		if (Done || bDESTROYED)
+			return;
+			
+		Active = on;
+		
+		/*
+		{
+			int num = (on) ? (Thinker.STAT_USER) : (Thinker.STAT_FIRST_THINKING - 1);
+			ChangeStatNum(num);
+		}
+		*/
+		if (Active)
+		{
+			Console.Printf("Enabled Chain %d", ID);
+			if (Delay[0] + Delay[1] > 0 && TeleSpots.Size() > 0)
+			{
+				if (id == 9001 || id == 9002)
+				{
+					Console.Printf("Initiating ticker.");
+				}
+				
+				// Make sure voodoo doll triggers point to the player.
+				if (who is 'PlayerPawn' && who.player && who.player.mo != who)
+				{
+					who = who.player.mo;
+				}
+				target = who;
+				
+				Timers.Clear();
+				Warping.Clear();
+					
+				Timers.Resize(Telespots.Size());
+				Warping.Resize(Telespots.Size());
+				for (int i = 0; i < Warping.Size(); i++)
+				{
+					Timers[i] = random[tm](Delay[0],Delay[1]);
+					Warping[i] = null;
+				}
+				
+			}
+			else 
+			{
+				if (id == 9001 || id == 9002)
+					Console.Printf("ERROR: Telespots = %d, delays = %d", Telespots.Size(), (Delay[0] + Delay[1]));
+				
+				SetMonsters(true, who);
+				Done = true;
+			}
+			
+		}
+		else
+		{
+			SetMonsters(false, who);
+		}
+		
+	}
+	
+	
+	
+	private Actor target;
+	private int Index;
+	private Array<Actor> Warping;
+	private Array<Int> Timers;
+	
+	override void Tick()
+	{
+		if (bDESTROYED)	return;
+		else if (Done)
+		{
+			Destroy(); // Bye bye!
+			return;
+		}
+		
+		if (!Active)	return;
+		
+		
+		if (Telespots.Size() > 0 && (Delay[0] + Delay[1] > 0))
+		{
+			TeleportActors();
+		}
+		
+	}
+	private int Timer;
+	/*
+	private void TeleportActors()
+	{
+		if (Timer > 0)	Timer--;
+		else
+		{
+			Timer = random[tmr](Delay[0], Delay[1]);
+			
+			Actor mo = null;
+			for (int i = Index; i < Monsters.Size(); i++)
+			{
+				mo = Monsters[i];
+				if (mo)
+				{
+					Index = i + 1;
+					break;
+				}
+			}
+		}
+	}
+	*/
+	// Attempt teleporting monsters to the spots recorded. Check for space to 
+	// teleport an actor - if enough space is there, teleport them in and set
+	// a delay before activating another. One monster per teleport destination.
+	private void TeleportActors()
+	{
+		for (int i = 0; i < Timers.Size(); i++)
+			if (Timers[i] > 0)
+				Timers[i]--;
+		
+		bool empty = true;
+		Actor cur = null;
+		// Iterate through and replenish the warping array.
+		for (int i = 0; i < Warping.Size(); i++)
+		{	
+			cur = Warping[i];
+			if (!cur || cur.bKILLED || cur.FreezeTics < 1) // Find a new one if invalid.
+			{
+				Warping[i] = null;
+				cur = null;
+				
+				if (Index >= Monsters.Size()) // Unless we're at the end, then skip it.
+					continue;
+				
+				// Search the Monsters array for the next monster, picking up
+				// from the recorded index to save time.
+				for (int j = Index; j < Monsters.Size(); j++)
+				{
+					cur = Monsters[j];
+					// skip activated/dead monsters
+					if (!cur || cur.bKILLED || cur.FreezeTics < 1)
+					{
+						Warping[i] = null;
+						cur = null;
+						continue;
+					}
+					// Found one. Mark it and bump up the index by one more so
+					// this won't use it again.
+					empty = false;
+					Warping[i] = cur;
+					Index = j + 1;
+					break;
+					
+				}
+			}
+			if (cur) // We have an actor
+			{
+				empty = false;
+				for (int j = 0; j < Telespots.Size(); j++)
+				{
+					let spot = TeleSpots[j];
+					// Find a teleporter dest and attempt to teleport. If it
+					// succeeds, activate the actor and remove it from queue.
+					if (spot && Timers[j] < 1 && cur.Teleport(spot.pos, spot.angle, TELF_DESTFOG|TELF_SOURCEFOG))
+					{
+						HandleActor(true, cur, target, MHF_HATE);
+						Warping[i] = null;
+						Timers[j] = random(Delay[0], Delay[1]);
+						RandTeleSpots();
+						break;
+					}
+				}
+			}
+		}
+		// If there's nothing else to do, destroy chain on the next tick.
+		if (empty) 
+		{
+			Console.Printf("All done. %d", id);
+			Done = true;
+		}
+	}
+	
+	// Randomizes the pointers so no single spot has favoritism.
+	private void RandTeleSpots()
+	{
+		int size = Telespots.Size();
+		for (int i = 0; i < size; i++)
+		{
+			int n = random[rng](0, size-1);
+			if (n == i)	continue;
+			
+			let cur = Telespots[i];
+			let rep = Telespots[n];
+			
+			if (!cur || !rep) continue;
+			
+			// swap them and their timers
+			Telespots[i] = rep;
+			Telespots[n] = cur;
+			int temp = Timers[i];
+			Timers[i] = Timers[n];
+			Timers[n] = temp;
+		}
+	}
+	
+	void DestroyAll()
+	{
+		//foreach (sp : Spawners)
+		for (int i = 0; i < Spawners.Size(); i++)
+		{
+			let sp = Spawners[i];
+			if (sp) 
+			{
+				sp.FreezeTics = 0;
+				sp.Destroy();
+			}
+		}
+		// (mon : Monsters)
+		for (int i = 0; i < Monsters.Size(); i++)
+		{
+			let mon = Monsters[i];
+			if (mon)
+			{
+				mon.FreezeTics = 0;
+				mon.ClearCounters();
+				mon.Destroy();
+			}
+		}	
+		Destroy();
+	}
+}
+
+
+// Customized variant of SecActEnter that always triggers, and activates a specific
+// Chain instead of calling an actor special.
+Class MHTrigger : SecActEnter
+{
+	override bool TriggerAction(Actor triggerer, int activationType)
+	{
+		if ((activationType & health) && CanTrigger(triggerer))
+		{
+			bSTANDSTILL = true;
+			target = triggerer;
+			let event = MapHancerEvent.Fetch();
+			if (event)
+			{
+				event.ActivateChain(triggerer, Score);
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	override bool CanTrigger(Actor triggerer) //no 'special' check
+	{
+		return ((triggerer.player && !bFriendly) ||
+			(bAmbush && triggerer.bActivateMCross) ||
+			(bDormant && triggerer.bActivatePCross));
+	}
+}
+
+
+
+// Records info of actors for destruction.
+Class MHMonsterInfo play
+{
+	MHSpawnerInfo SpawnerInfo;
+	Actor Spawner; // Since AEoD currently doesn't have randomspawners for this.
+	Class<Actor> th;
+	Vector3 pos;
+	double angle;
+	int TID, special, args[5], spawnflags;
+	Actor Targ, Mas, Trac;
+	
+	static MHMonsterInfo RecordMonster(Actor mo, Actor spawn)
+	{
+		if (!mo)	return null;
+		
+		let rec = new('MHMonsterInfo');
+		if (rec)
+		{
+			rec.th = mo.GetClass();
+			rec.pos = mo.pos;
+			rec.angle = mo.angle;
+			rec.TID = mo.TID;
+			rec.spawnflags = mo.spawnflags;
+			rec.Targ = mo.Target;
+			rec.Mas = mo.Master;
+			rec.Trac = mo.Tracer;
+			rec.special = mo.special;
+			for (int i = 0; i < 5; i++)
+				rec.args[i] = mo.args[i];
+				
+			rec.Spawner = spawn;
+		}
+		return rec;
+	}
+			
+	private bool CheckSpawner()
+	{
+		
+		return (Spawner != null);
+	}
+	
+	Actor SpawnActor()
+	{
+		if (bDESTROYED) return null;
+		
+		let mo = Actor.Spawn(th, pos, NO_REPLACE);
+		if (mo)
+		{
+			mo.Target = Targ;
+			mo.Master = Mas;
+			mo.Tracer = Trac;
+			mo.spawnflags = spawnflags;
+			mo.angle = angle;
+			mo.ChangeTID(TID);
+			mo.special = special;
+			for (int i = 0; i < 5; i++)
+				mo.Args[i] = args[i];
+			
+		//	if (Spawner)
+				
+		}
+		
+		return mo;
+	}
+}
+
+Class MHVector
+{
+	Vector3 V;
+	double angle;
+	static MHVector Create(Vector3 a, double b)
+	{
+		let vec = new('MHVector');
+		vec.V = a;
+		vec.angle = b;
+		return vec;
+	}
+}
+
+Class MHRect play
+{
+	Vector2 LoV, HiV;
+	bool tspot;
+	
+	static MHRect Create(Vector2 lo, Vector2 hi, bool spot)
+	{
+		let cc = new('MHRect');
+		cc.Set(lo, hi, spot);
+		return cc;
+	}
+	
+	void Set(Vector2 lo, Vector2 hi, bool spot)
+	{
+		LoV.X = min(lo.x, hi.x);
+		LoV.Y = min(lo.y, hi.y);
+		HiV.X = max(lo.x, hi.x);
+		HiV.Y = max(lo.y, hi.y);
+		tspot = spot;
+	}
+	
+	bool InRange(Vector2 p, bool spot)
+	{
+		if (spot != tspot)
+		{
+			return false;
+		}
+		
+		
+		
+		return (
+			p.x >= LoV.x &&
+			p.x <= HiV.x &&
+			p.y >= LoV.y &&
+			p.y <= HiV.y);
+	}
+}
+

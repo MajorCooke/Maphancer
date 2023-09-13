@@ -1,0 +1,7 @@
+version "4.10"
+
+#include "ZHancer/Constants.txt"
+//#include "ZHancer/InDev.txt"
+#include "ZHancer/Hancer.txt"
+#include "ZHancer/Janitor.txt"
+#include "ZHancerInputs.txt" // This is where the magic happens.

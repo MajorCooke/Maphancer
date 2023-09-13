@@ -1,0 +1,34 @@
+All help and contribution to the project is welcome. However, there is some
+limitations as to what maps will be allowed or blacklisted.
+
+*** RULES ***
+Maps that are applicable for Maphancer must meet these criteria for submissions:
+- Slaughter map (500+ monsters)
+- Gets a decent boost to FPS when entering the map with "No Monsters" enabled
+- Has little to no ACS/ZScript built specifically for the map
+- Isn't a Mockumentary-esque map [1]
+
+[1] - These maps fall under the ACS rule, and are designed to be as they are.
+
+*** STANDARDS ***
+For the most part these should be applied. Exceptions can be made (see 
+Contributions section below):
+- Latest version only [2]
+- Is at least 6+ months old without further development
+- Isn't a NUTS 1-esque map [3]
+
+[2] - Old versions will be kept until the new version can be implemented
+[3] - Usually features all monsters in one place that all wake up and can 
+immediately attack players at once. NUTS 2 may be an exception, as half of the 
+enemies are cordoned off in another section.
+
+*** SUBMISSIONS ***
+Invoked by opening an Issue in Github, please specify the name of the WAD with a
+direct download link with the particular map numbers listed. All rules and standards
+will be applied.
+
+*** CONTRIBUTIONS ***
+Contributors are those who make pull requests to add in maps directly to the 
+input code. These have a much higher chance of being added as the contributor 
+did the hard work for us. Better still, some of the standards can even be waived.
+

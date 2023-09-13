@@ -1,0 +1,24 @@
+This document attempts to keep an up-to-date list of things to take into 
+consideration with certain map types:
+
+* Doom
+* Hexen
+* UDMF
+
+** Doom **
+- Problem -
+The following specials do NOT call the line triggering mechanism properly:
+
+* Teleport (All)
+
+- Solution -
+ONLY FOR PLAYERS.
+Use 'AddTrigger' function. Supply it in a section that the player will enter
+before tripping the line/switch, and if needed, in multiple sectors to ensure it
+cannot be missed by accident.
+================================================================================
+** Hexen **
+None yet.
+================================================================================
+** UDMF **
+None yet.

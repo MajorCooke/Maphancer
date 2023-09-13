@@ -1,0 +1,37 @@
+================================================================================
+*** Terminology ***
+
+	* Checksum
+A string of characters ranging from 0-9 and A-Z, constructed by calculating all
+the things, vertexes, lines, sides and/or sectors present within the map, giving
+each a unique identifier. Changing *ANYTHING* about the map, even shifting one
+thing over by a single unit will completely change the checksum, ensuring every
+version of the map has a unique identifier that can be gathered and used for
+specific versions.
+
+As such, new versions of the map will never implement checksum-specific 
+modifications of older versions because of this.
+
+	* Section Chain (MHSecChain)
+An established connection with an ID that manages all monsters (de)activated by
+the certain events (i.e. crossing a line, or a specialized MapHancer trigger).
+These are created at the start of a map. Their targeted regions for deactivating
+monsters are established in ZHancerInputs.txt and processed, shutting down the 
+affected within the bounding boxes/sectors established.
+
+Once enabled, they restore functionality to the monsters before removing themselves.
+
+	* Maphancer Trigger (MHTrigger)
+A specialized map placed trigger that can be used to help section off parts of
+a map. This behaves exactly how SecActEnter (Actor Enters Sector action) does,
+but instead of calling a special, it directly tells the link associated by ID
+to activate. Only triggers once by players. Will be expanded to include more
+functionality in the future.
+
+	* Aliases
+An aliased ID means it belongs to another. Any alias that is linked to a specific
+ID will also trigger as well. This is the only way to trigger multiple chains at
+the same time. 
+
+Note: If an aliased number is shared between multiple groups, those alias groups
+will effectively be activated as if they're all one large group.

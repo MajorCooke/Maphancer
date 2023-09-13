@@ -1,0 +1,8 @@
+// Main options
+server int MHOverride = 0;
+
+// Janitor (removes bodies)
+server bool MHJanitorial = false;
+server int MHJanMin = 1;
+server int MHDebug = 0;
+

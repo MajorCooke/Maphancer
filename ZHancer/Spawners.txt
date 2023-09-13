@@ -1,0 +1,14 @@
+// The purpose of this file is to handle any special classes for the "despawn"
+// option. Mods like AEons of Death provide their own spawners and make use of
+// the target/master/tracer pointers, so it's important to restore them.
+
+Class MHSpawnerInfo
+{
+	Class<Actor> cls;	// the class
+	int ptr; 			// which pointer(s) to restore. Can be AAPTR_<TARGET/MASTER/TRACER>.
+}
+
+extend Class MapHancerEvent
+{
+	private Array<MHSpawnerInfo> SpawnerInfos;
+}

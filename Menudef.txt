@@ -1,0 +1,22 @@
+AddOptionMenu "OptionsMenu"
+{
+	Submenu "Maphancer", "MaphancerOptions"
+}
+
+OptionMenu "MaphancerOptions"
+{
+	Title "Maphancer Options"
+	// MaphancerStatus
+	StaticText "Note: Only available where Maphancer is active", GOLD
+	Option "Actors will",			MHOverride, 	"MHOverrideValues"
+	StaticText " "
+	Option "Janitor",				MHJanitorial,	"OnOff"
+	Slider "Corpse Removal Timer",	MHJanMin,		1, 60, 1, 0, MHJanitorial
+}
+
+OptionValue "MHOverrideValues"
+{
+	0,	"Freeze"
+	1,	"Spawn In"
+//	3,	"Statnum" // Disabled since this can cause issues with the monsters.
+}

@@ -1,0 +1,16 @@
+[enu default]
+
+MH_VERSION = "Alpha 1";
+
+MH_ACTTYPE = "(De)Activation Type";
+MH_ACTNOTICE = 
+	"Note: Mods can override this option entirely for specific actors.";
+
+MHT_FREEZE_INFO =
+	"Freezes actor in time. Default behavior.\n"
+	"Most mod compatible\n"
+	"Less performance boost.";
+MHT_DESTROY_INFO =
+	"Removes the actor from the game temporarily.\n"
+	"Least mod compatibility\n"
+	"More performance boost";

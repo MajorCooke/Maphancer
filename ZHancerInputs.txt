@@ -1,0 +1,383 @@
+/*
+See guide.txt for how to get the checksum.
+
+Functions marked [NYI] are Not Yet Implemented.
+
+Functions available for marking sections:
+
+* AddRect(int id, double lox, double loy, double hix, double hiy);
+* AddRecv(int id, Vector2 lo, Vector2 hi)
+Marks all monsters as part of sector tag 'id' between AABB vectors 'lo' & 'hi'.
+
+* AddVerts(int id, int first, int second)
+Similar to AddRect, but takes the indexes of vertexes. Order doesn't matter, the
+mod automatically corrects coordinates and makes a box.
+
+* AddSectors(int id, int from, int to = -1)
+Includes all monsters who are positioned within the sector index ranges [from, to]. 
+If 'to' is unspecified or < from, only adds 'from'.
+
+* AddSecAABB(int id, int num)
+Similar to AddSectors, but forms a bounding box around the sector number and includes
+anything within that sector's AABB overlap.
+
+* AddTrigger(int id, double x, double y)
+Adds a manual trigger that is activated the moment the player crosses into the 
+sector. Useful for splitting off certain chunks of the map where no line triggers
+are, or to cover compatibility issues (see Terminology.txt & MapCompat.txt)
+
+* AddAlias(int id, int from, int to = from)
+Groups id with range [from, to]. Any id triggered will activate the whole group.
+This is the only way to trigger multiple ids at once with a line activation.
+
+NOTE: All ids are aliases. If an id is present in multiple groups, they will
+all trigger. To keep an alias from triggering other groups, call a different id
+that's singular to a group.
+
+* [NYI]CopyChain(int id, int newid)
+Duplicates a chain with a different ID. Useful for making mutually exclusive alias
+groups only. 
+
+*/
+
+extend class MapHancerEvent
+{
+	void PerformSetup()
+	{	
+		Switch (checksum)
+		{
+
+			Case 'C23AC4564765BB0834325735AFC7CA1D': // ProfanePromiseland.wad map01 (beta)
+			Case '75E6622ABFF14EE087D7E6A0834D40A3': // ^ RC1 (sadly not compatible, will need a redo)
+			{
+			//	SetDefaultType(MHT_STAT);
+				int n = 0;
+				//--------------------------------------------------------------
+				// Closets
+				//--------------------------------------------------------------
+				AddSectors(	284,	2124);
+				AddSectors(	280,	2200);
+				AddVerts(	258,	13909,	13889);
+				AddVerts(	 81,	7731,	7694);
+				AddVerts(	201,	11530,	11363);
+				AddVerts(	220,	11486,	11518);
+				AddVerts(	221,	11470,	11498);
+				AddVerts(	191,	9693,	9696);
+				AddVerts(	 81,	9542,	6245);
+				AddVerts(	181,	1338,	1778);
+				AddVerts(	 17,	1340,	1775);
+				AddVerts(	 17,	18968,	18937);
+				AddSectors(	 18,	247);
+				AddVerts(	 73,	7067,	2547);
+				AddSectors(	248,	2027);
+				AddSectors( 246,	6980);
+				AddVerts(	421,	17047,	17251);
+				AddVerts(	192,	5931,	4577);
+				AddVerts(	1,		1362,	1353);
+				
+				//--------------------------------------------------------------
+				// Game areas
+				//--------------------------------------------------------------
+				
+				//...a hack needed for teleport lines. Ugh.
+				AddTrigger(	1,	-6720,	-4416);
+				AddVerts(	1,	1461,	1482);
+				
+				// L section south of first teleporter
+				
+				
+				n = 17;
+				AddSectors(	n,	394);	// S mancubi
+				AddSectors(	n,	3701);	// They're right on the vertices so add both sectors to be safe.
+				AddRect(	n,	-7680,	-7168,	-7200,	-5280); // W revenants 
+				AddVerts(	n,	7210,	20426); // S revenants
+				AddVerts(	n,	20787,	20504);	// SE fatmuscle rockeplasma army
+				AddVerts(	n,	18519,	3462);	// E reveknights
+				AddVerts(	n,	2136,	1617);	// L vertical section + cybers
+				
+				
+				// 73 handled above, triggers bfg trap
+				AddSectors(	76, 	3845); // 4 cybers bfg exit
+				AddVerts(	140,	2626,	8052); // Upstairs area
+				
+				n = 77;
+				AddVerts(	n,		7747,	22236);
+				AddVerts(	n,		22128,	22734); // Sewer entrance
+				AddVerts(	n,		21109,	21107);
+				
+				n = 900;
+				AddVerts(	n,	4507,	21462); // Sewer trap revenants
+				AddVerts(	n,	5598,	5751);	// Sewer trap mancubi
+				
+				AddSectors(	862,	1624); // Sewer stairs
+				AddSectors( 183,	1630);
+				
+				AddVerts(	328,	11549,	11547); // post-Sewer bridge
+				AddTrigger(	328,	-4768,	-8352);
+				
+				AddVerts(	171,	20426,	10664); // return to L arena
+				
+				AddVerts(	199,	2590,	20187); // reve party next to BFG arena
+				
+				AddVerts(	198,	10528,	2112);	// L arena southern door
+				AddVerts(	198,	10427,	2499);
+				
+				AddVerts(	198,	24121,	23978);	// Sinking floor arena
+				
+				n = 172;
+				AddSectors(n, 4915, 4916);
+				AddSectors(n, 4918, 4919);
+				
+				AddVerts(	48,		3324,	2326);	// post floor arena
+				AddVerts(	48,		10440,	10437);
+				AddVerts(	48,		3227,	3224);
+				AddVerts(	48,		54436,	54418);
+				AddSecAABB( 48, 	5100);
+				
+				AddVerts(	5000,	25125,	24855); // bridge battle
+				AddVerts(	5000,	3210,	3214);
+				AddVerts(	5000,	24778,	3253);
+				
+				// back to the starting square, L area cleared. Heading west.
+				n = 309;
+				AddVerts(	n,		1429,	998);
+				AddSectors(	n,		1203,  1210); //8 revenants across the lava river
+				
+				n = 96;
+				AddVerts(	n,		26372,	26354);
+				AddRect(	n,		-12384, -2560,	-8046, 800); // into the inferno
+				AddVerts(	n,		27653,	767);
+				
+				AddSectors(	361,	1663); // archvile box
+				
+				// west cross section
+				AddVerts(	192,	6158,	6697);
+				AddVerts(	192,	10477,	6532);
+				AddVerts(	192,	9568,	5373);
+				AddVerts(	359,	6116,	29320);
+				AddVerts(	359,	29441,	29496);
+				
+				// back out and going north
+				AddSectors(	189,	1635);
+				AddRect(	2005,	-11008,	4864,	-8000,	8288);
+				AddVerts(	2005,	29820,	10401);
+				AddVerts(	2005,	29819,	29838); // blue key exit going south
+				
+				// teleport to grate area
+				AddTrigger(	855,	-4064,	-1632);
+				AddVerts(	855,	31017,	31040);
+				AddVerts(	855,	30970,	15711);
+				AddVerts(	851,	31190,	31210);
+				AddVerts(	856,	31360,	31261);
+				
+				
+				
+				// Back to start arena, north blue key door now revealed
+				// Here, we use a non-existing tag since we're adding in manual
+				// triggers.
+				AddVerts(370, 1063, 1263);
+				
+				// Approaching the blue key door
+				n = 857;
+				AddTrigger(	n,	-6208, -2504);
+				AddVerts(	n,	14177,	14189);
+				AddSectors(	n,	823);
+				
+				
+				// Now going east
+				n = 338;
+				AddVerts(	n,	1190,	42436);
+				AddVerts(	n,	8063,	8050);
+				
+				// drop down megasphere pit of doom going south
+				n = 341;
+				AddTrigger( n,	-1536,	-4704);
+				AddVerts(	n,	10664,	9169);
+				
+				// Entering bloody arena
+				
+				AddVerts(255,	46098,	45084);	
+				AddVerts(257,	42436,	46284);
+				n = 284;
+				AddSectors(	n,		10191);
+				AddSectors(	n,		10233);
+				AddSectors(	n,		3014);
+				AddSectors(	n,		2142);
+				AddSecAABB(	n,		2197);
+				AddSectors(	n,		10193, 10195);
+				AddSectors(	n,		2088);
+				AddSectors(	n,		2161);
+				AddSectors(	n,		16);
+				AddSectors(	n,		69);
+				AddSectors(	n,		10190);
+				AddSectors(	n,		10234);
+				AddVerts(	n,		13265,	13247);
+				AddSectors(	n,		10228);
+				AddVerts(	n,		43707,	43761);
+				AddSectors(	n,		2355);
+							
+				
+				// pillars
+				n = 280;
+				AddVerts(	n,		12646,	12618);
+				AddVerts(	n,		12967,	13029);
+				AddVerts(	n,		46097,	45084);
+				
+				// lonely cyber
+				AddSectors(	180,	10098);
+				
+				AddSecAABB(	353,	2225); // bloody platform
+				
+				
+				// into lava platforms
+				n = 8888;
+				AddVerts(	n,	45911,	6425); // lava switch
+				AddVerts(	n,	45885,	45714);
+				
+				//quad door trap
+				n = 343;
+				AddVerts(	n,	13689,	14251);	// west
+				AddVerts(	n,	46671,	5902);	// south
+				AddSectors(	n,	10420);
+				AddVerts(	n,	46862,	6636);
+				AddSecAABB(	n,	952); 			// east
+				AddVerts(	n,	46842,	7162);
+				AddSectors( n,	2979); 			// north
+				
+				// extra trap closets in quad trap
+				n = 357;
+				AddVerts(	n,	47746,	5580);
+				AddVerts(	n,	6833,	48207);
+				AddVerts(	n,	6255,	48205);
+				AddVerts(	n,	47986,	6480);
+				AddVerts(	n,	6480,	46885);
+				AddSectors(	n,	10909); // one little spot not covered, grrr.
+				AddSectors(	n,	10906);
+				
+				// Leaving quad trap, teleporting to second switch
+				AddSecTag(	290); // Add all within the tagged sectors.
+				
+				// Biggest cacocloud ever! 
+				n = 307;
+				AddSectors(	n,	2106);
+				AddSectors(	n,	2185);
+				AddVerts(n, 5759, 9169);
+				
+				n = 282; // yellow skull pickup painmentals & arachnocybers
+				AddVerts(	n,	12860,	12907);
+				AddVerts(	n,	12926,	12929);
+				AddVerts(	n,	14189,	31615);
+				
+				// Yellow skull switch in blue door area
+				AddVerts(	337,	3712,	3680);
+				
+				// northern arena
+				n = 47;
+				AddVerts(	n,	32170,	32237);
+				AddSecAABB(	n,	87);
+				
+				// 'squeezer' box. My greatest nemesis.
+				AddRect(	193,	-8000,	4928,	-4944,	7296);
+				
+				// Revenant surprise parteeeeeee
+				n = 3;
+				AddSecTag(	n); 
+				AddVerts(	n,	28611,	610); 
+				AddVerts(	n,	629,	416);
+				AddVerts(	n,	32226,	1891);
+				AddVerts(	n,	1891,	1991);
+				
+				// lava abode
+				AddRect(	n,	-4288,	1512,	-1768,	4928);
+				
+				// mastermind arena
+				n = 50;
+				AddVerts(n,		3512,	37731); // main area
+				AddVerts(n,		3603,	3641); // corner region
+				AddVerts(n,		3512,	3645); // ^
+				
+				// 73 CYBERS. BFGesus be with us...
+				// Final battle
+				// Cybers mid-room
+				AddVerts(800,	 8480,	40152);
+				AddVerts(801,	 5181,	40130);
+				AddVerts(801,	40514,	40961);
+				
+				
+				n = 9001; // Pinkies
+				SetDelay(n, 8, 30);
+				AddVerts(n, 5181,	40130, MHFF_SPOT); 	// Destinations
+				AddVerts(n, 15499,	15521);
+				AddVerts(n, 54323,	54340);
+				
+				int dmin = 80, dmax = 160;
+				n = 9002; // Revenants 1
+				SetDelay(n, dmin, dmax);
+				AddVerts(n, 39372, 40962, MHFF_SPOT);
+				AddVerts(n, 6892, 5616);
+				
+				n = 9003; // Revenants 2 + Cybers
+				SetDelay(n, dmin, dmax);
+				AddVerts(n, 39372, 40962, MHFF_SPOT);
+				AddVerts(n, 6893, 6906);
+				
+				n = 9004; // Barons
+				SetDelay(n, dmin, dmax);
+				AddVerts(n, 39372, 40962, MHFF_SPOT);
+				AddSecAABB(n, 8038);
+				
+				n = 9005; // Knights
+				SetDelay(n, dmin, dmax);
+				AddVerts(n, 39372, 40962, MHFF_SPOT);
+				AddVerts(n, 8833, 8736);
+				
+				
+				// Make 9001 to 9005 trigger with 801
+				AddAlias(801, 9001, 9005);
+				
+				
+				
+				/*
+				// closets
+				n = 9001;
+				AddSecAABB(n, 2815);					// South Upper right pinkie box
+				AddSecAABB(n, 5056);					// North Upper right pinkie box
+				AddSecAABB(n, 8756, MHFF_SPOT);			// upper right destinations
+				
+				n = 9002;
+				AddSecAABB(n, 2775);					// South Upper left pinkie box
+				AddSecAABB(n, 10944);					// North Upper left pinkie box
+				AddSecAABB(n, 8761, MHFF_SPOT);			// lower right dest
+				
+				n = 9003;
+				AddSecAABB(n, 8074);					// South lower left pinkie box
+				AddSecAABB(n, 10938);					// North lower left pinkie box
+				AddSecAABB(n, 8111, MHFF_SPOT);			// upper left dest
+				
+				n = 9004;
+				AddSecAABB(n, 2770);					// South lower right pinkie box
+				AddSecAABB(n, 10940);					// North lower right pinkie box
+				AddSecAABB(n, 2697, MHFF_SPOT);			// lower left dest
+				
+				
+				n = 9005;
+				AddVerts(n, 8842, 8834);
+				AddVerts(n, 15495, 5616);
+				*/
+				
+			//	AddVerts(	801,	15499,	8834);
+			//	AddRect(	801,	10688,	-12544,	14272,	-8000);
+				
+				
+				
+				
+				// Secret arena - the test of sanity.
+				AddRect(	421,	1792,	5376,	8960,	12544);
+				
+				break;
+			}
+			Case '0E379EEBEB189F294ED122BC60D10A68': // Hellbound Map29
+				break;
+		}
+	}
+}
