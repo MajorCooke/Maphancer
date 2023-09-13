@@ -35,8 +35,8 @@ Class MapHancerEvent : EventHandler
 	private int Setup;
 	private Name checksum;
 	
-	internal readonly EMHFlags	DefFlags; 
-	internal readonly EMHType	DefType;
+	EMHFlags	DefFlags; 
+	EMHType	DefType;
 	
 	static clearscope MapHancerEvent Fetch()
 	{
@@ -490,8 +490,8 @@ Class MHSecChain : Thinker
 	Array<MHTrigger> Triggers;
 	Array<int> Sectors;
 	
-	internal readonly EMHFlags Flags;
-	internal readonly EMHType Type;
+	EMHFlags Flags;
+	EMHType Type;
 	
 	int GetID() { return ID; }
 	
