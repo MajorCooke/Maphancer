@@ -48,7 +48,7 @@ extend class MapHancerEvent
 		{
 
 			Case 'C23AC4564765BB0834325735AFC7CA1D': // ProfanePromiseland.wad map01 (beta)
-			Case '75E6622ABFF14EE087D7E6A0834D40A3': // ^ RC1 (sadly not compatible, will need a redo)
+		//	Case '75E6622ABFF14EE087D7E6A0834D40A3': // ^ RC1 (sadly not compatible, will need a redo)
 			{
 			//	SetDefaultType(MHT_STAT);
 				int n = 0;
