@@ -1,0 +1,4 @@
+Here is a list of WADS that have support implemented.
+
+Profane Promiseland (Original BETA Release)
+	https://www.doomworld.com/forum/topic/131532-profane-promiseland-rc1-release/

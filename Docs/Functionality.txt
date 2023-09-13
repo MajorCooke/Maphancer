@@ -1,24 +1,8 @@
+(WIP)
+
 ================================================================================
 *** Functionality Guide ***
 
 Details what each function does along with variables available for ZHancerInputs
 file.
-
-
-
-
-================================================================================
-** WIP **
-* SetDefaultFlags (EMHFlags flags)
-Sets the default flags to apply to a link upon any subsequent linkage performed,
-but only if the link hasn't been created beforehand.
-
-* SetDefaultType (EMHType type)
-Same but for the type.
-
-* SetFlags (EMHFlags flags)
-Overrides the default flags applied to the map.
-
-* SetType (EMHType type)
-Overrides the default type.
 
