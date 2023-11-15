@@ -1,0 +1,36 @@
+name: WAD Submission
+description: Have a WAD that can be optimized by Maphancer?
+title: "[WAD] "
+labels: Submission
+#assignees: ''
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+       ## Rules
+       * Latest version of the mapset only
+       * Must be 6+ months old and have no further development ongoing
+       * Lags solely because of monsters, not vertices/lines/sector count
+       * Must have 500+ monsters on at least one skill level
+       * Must have little to no ACS/ZScript controlling it
+  - type: input
+    id: wadname
+    attributes:
+      label: "WAD name & link"
+      description: |
+        Please provide a link to the mapset's **original release thread/idgames archive**.
+      placeholder: "ex: Sunder (link here)"
+    validations:
+      required: true
+  - type: textarea
+    id: maplist
+    attributes:
+      label: Map List
+      description: "Please indicate in a list which maps cause lag."
+      placeholder: |
+        Example:
+        - MAP08
+        - MAP12
+    validations:
+      required: true
